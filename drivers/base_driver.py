@@ -322,5 +322,34 @@ class DriverBase:
 
         return True
     #end
+
+    class _TargetObjective:
+        def __init__(self,type,function,scale,target,weight):
+            if scale <= 0.0 or weight <= 0.0:
+                raise ValueError("Scale and weight must be positive.")
+            self.target = target
+            if type == "min":
+                self.scale = scale*weight
+            elif type == "max":
+                self.scale = -1.0*scale*weight
+            else:
+                raise ValueError("Type must be 'min' or 'max'.")
+
+            self.function = function
+    #end
+    
+    def addTargetObjective(self,type,function,scale=1.0,target=0.0,weight=1.0):
+        """
+        Add an objective function to the optimization problem.
+
+        Parameters
+        ----------
+        type      : "min" or "max" for minimization or maximization.
+        function  : A function object.
+        scale     : Scale applied to the function, optimizer will see function*scale.
+        weight    : Weight given to the objective, only relevant for multiple objectives.
+        """
+        self._objectives.append(self._TargetObjective(type,function,scale,target,weight))
+
 #end
 
