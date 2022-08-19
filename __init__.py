@@ -14,8 +14,9 @@ from drivers import ExteriorPenaltyDriver
 from drivers import ScipyDriver
 from drivers import ScipyDriverNew
 from drivers import ScipyDriverInverse
-from drivers import ScipyDriverInverseTest
-try: from drivers import IpoptDriver
+try: 
+    from drivers import IpoptDriver
+    from drivers import IpoptDriverInverse
 except: pass
 from optimizers import goldenSection
 from optimizers import quadraticInterp
