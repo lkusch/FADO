@@ -20,7 +20,7 @@ import time
 import numpy as np
 from drivers.constrained_optim_driver import ConstrainedOptimizationDriver
 
-class ScipyDriverInverseRegularization(ConstrainedOptimizationDriver):
+class ScipyDriverInverse(ConstrainedOptimizationDriver):
     """
     Driver to use with the SciPy optimizers, especially the constrained ones.
     """
@@ -31,6 +31,7 @@ class ScipyDriverInverseRegularization(ConstrainedOptimizationDriver):
         self._constraints = []
         self._bounds = []
         self._regularize = False
+        self._regfactor = 1.0
     #end
 
     def preprocess(self):
@@ -89,7 +90,7 @@ class ScipyDriverInverseRegularization(ConstrainedOptimizationDriver):
         if self._regularize :
             #sumObj += l2norm(x)*l2norm(x)
             l2norm_x = np.linalg.norm(x)
-            sumObj += l2norm_x**2
+            sumObj += self._regfactor*l2norm_x**2
         if self._logObj is not None:
             #data = [sumObj]
             #self._logObj.write(self._logRowFormat.format(*data))
@@ -112,7 +113,7 @@ class ScipyDriverInverseRegularization(ConstrainedOptimizationDriver):
             for obj in self._objectives:
                 self._grad_f += 2*(obj.function.getValue()-obj.target)*obj.function.getGradient(self._variableStartMask) * obj.scale
             if self._regularize : 
-                self._grad_f += 2*x
+                self._grad_f += 2*self._regfactor*x
             self._grad_f /= self._varScales
 
             # keep copy of result to use as fallback on next iteration if needed
@@ -184,8 +185,9 @@ class ScipyDriverInverseRegularization(ConstrainedOptimizationDriver):
         return self._jac_g[:,idx]
     #end
 
-    def setRegularization(self):
+    def setRegularization(self, reg_factor):
         self._regularize = True
+        self._regfactor = reg_factor
     #end
 #end
 
