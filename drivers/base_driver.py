@@ -22,10 +22,9 @@ import numpy as np
 
 class DriverBase:
     """Base class for optimization drivers, implements the basic setup interface."""
-
     # "structs" to store objective and constraint information
     class _Objective:
-        def __init__(self,type,function,scale,weight):
+        def __init__(self,type,function,scale,weight,target=0.0,isTarget=False):
             if scale <= 0.0 or weight <= 0.0:
                 raise ValueError("Scale and weight must be positive.")
 
@@ -37,13 +36,18 @@ class DriverBase:
                 raise ValueError("Type must be 'min' or 'max'.")
 
             self.function = function
+            self.target = target
+            self.isTarget = isTarget
     #end
 
     class _Constraint:
-        def __init__(self,function,scale,bound=-1E20):
+        def __init__(self,function,scale,bound=-1E20,multiCounter=0,target=0.0,isTarget=False):
             self.scale = scale
             self.bound = bound
             self.function = function
+            self.target = target
+            self.isTarget = isTarget
+            self.multiCounter = multiCounter
     #end
 
     def __init__(self):
@@ -84,6 +88,8 @@ class DriverBase:
         self._userPreProcessGrad = None
         self._userPostProcessFun = None
         self._userPostProcessGrad = None
+
+        self._multiCounter = 0
     #end
 
     def addObjective(self,type,function,scale=1.0,weight=1.0):
@@ -109,12 +115,19 @@ class DriverBase:
     def addLowerBound(self,function,bound=0.0,scale=1.0):
         """Add a lower bound inequality constraint."""
         if scale <= 0.0: raise ValueError("Scale must be positive.")
-        self._constraintsGT.append(self._Constraint(function,scale,bound))
+        self._constraintsGT.append(self._Constraint(function,scale,bound,self._multiCounter))
 
     def addUpperBound(self,function,bound=0.0,scale=1.0):
         """Add an upper bound inequality constraint."""
         if scale <= 0.0: raise ValueError("Scale must be positive.")
-        self._constraintsGT.append(self._Constraint(function,-1*scale,bound))
+        self._constraintsGT.append(self._Constraint(function,-1*scale,bound, self._multiCounter))
+
+    def addUpperBoundTarget(self,function,bound=0.0,scale=1.0,target=0.0):
+        if scale <= 0.0: raise ValueError("Scale must be positive.")
+        self._constraintsGT.append(self._Constraint(function,-1*scale,bound,self._multiCounter,target, True))
+
+    def addMultiPointConstraint(self):
+        self._multiCounter=self._multiCounter+1
 
     def addUpLowBound(self,function,lower=-1.0,upper=1.0):
         """Add a range constraint, this is converted into lower/upper bounds."""
@@ -324,32 +337,32 @@ class DriverBase:
     #end
 
     class _TargetObjective:
-        def __init__(self,type,function,scale,target,weight):
+        def __init__(self,type,function,scale,target,weight=1.0):
             if scale <= 0.0 or weight <= 0.0:
                 raise ValueError("Scale and weight must be positive.")
             self.target = target
             if type == "min":
                 self.scale = scale*weight
-            elif type == "max":
-                self.scale = -1.0*scale*weight
             else:
-                raise ValueError("Type must be 'min' or 'max'.")
+                raise ValueError("Type must be 'min'.")
 
             self.function = function
+            self.isTarget = True
     #end
     
     def addTargetObjective(self,type,function,scale=1.0,target=0.0,weight=1.0):
         """
-        Add an objective function to the optimization problem.
+        Add a target objective function to the optimization problem.
 
         Parameters
         ----------
-        type      : "min" or "max" for minimization or maximization.
+        type      : "min".
         function  : A function object.
         scale     : Scale applied to the function, optimizer will see function*scale.
+        target    : The target value to be achieved in the optimization
         weight    : Weight given to the objective, only relevant for multiple objectives.
         """
-        self._objectives.append(self._TargetObjective(type,function,scale,target,weight))
+        self._objectives.append(self._TargetObjective(type,function,scale,target))
 
 #end
 

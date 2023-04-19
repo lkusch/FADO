@@ -13,6 +13,7 @@ from tools import GradientScale
 from drivers import ExteriorPenaltyDriver
 from drivers import ScipyDriver
 from drivers import ScipyDriverInverse
+from drivers import ScipyDriverMultipoint
 try: 
     from drivers import IpoptDriver
     from drivers import IpoptDriverInverse
